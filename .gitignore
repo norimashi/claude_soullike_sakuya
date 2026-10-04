@@ -1,0 +1,14 @@
+*
+!.gitignore
+!.gitattributes
+!.nojekyll
+!README.md
+!index.html
+!index.js
+!index.wasm
+!index.pck
+!index.png
+!index.icon.png
+!index.apple-touch-icon.png
+!index.audio.worklet.js
+!index.audio.position.worklet.js
