@@ -6,7 +6,9 @@ Godot製3Dアクションゲームです。ブラウザ版とWindows 64ビット
 
 [Windows版をダウンロード](https://github.com/norimashi/claude_soullike_sakuya/releases/latest/download/claude_soullike_sakuya-windows.zip) / [リリース一覧](https://github.com/norimashi/claude_soullike_sakuya/releases)
 
-PCブラウザーで開き、画面内の操作説明に従ってプレイしてください。初回はゲームデータのダウンロードと描画の準備に時間がかかります。
+ブラウザーで開き、画面内の操作説明に従ってプレイしてください。PCではキーボードとマウス、スマートフォン・タブレットでは横向きのタッチ操作に対応しています。初回はゲームデータのダウンロードと描画の準備に時間がかかります。
+
+ブラウザ版は日本語・英語を切り替えられます。PCではポーズ中にF3で言語、F2で画質を切り替えられます。読み込み時に指定する場合は、URLの末尾に`?lang=en`や`?q=low`を付けてください。
 
 ## Windows版
 
@@ -18,7 +20,7 @@ Godotのインストールは不要です。ダウンロードしたZIPを「す
 
 このリポジトリには、Web実行に必要な`index.*`の9ファイルと公開用の設定・説明ファイルを収録しています。書き出しはスレッド無効、GDExtensionなしです。
 
-Windows版ZIPはGitHub Releasesに添付しています。ブラウザ版の画面右下からもダウンロードページを開けます。
+Windows版ZIPはGitHub Releasesに添付しています。マウスで操作するブラウザでは画面右下からもダウンロードページを開けます。
 
 GitHub Pagesの公開元は`main`ブランチの`/(root)`です。`.nojekyll`でJekyllによる変換を無効にし、`.gitattributes`で書き出しファイルの改行を保持します。
 

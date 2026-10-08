@@ -2,7 +2,11 @@
 <html lang="ja">
 	<head>
 		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0">
+		<meta name="mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<meta name="theme-color" content="#000000">
 		<title>呪われた地下迷宮 ～Gilded Catacomb～</title>
 		<style>
 html, body, #canvas {
@@ -11,11 +15,58 @@ html, body, #canvas {
 	border: 0;
 }
 
+html, body {
+	height: 100%;
+}
+
 body {
 	color: white;
 	background-color: black;
 	overflow: hidden;
 	touch-action: none;
+	overscroll-behavior: none;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+	-webkit-tap-highlight-color: transparent;
+}
+
+/* phones: the game is played with the screen on its side */
+#rotate {
+	display: none;
+	position: fixed;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	z-index: 20;
+	background: #0a0b10;
+	color: #d8d2bc;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+	font-family: 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic UI', sans-serif;
+	font-size: 1.1rem;
+	line-height: 2;
+}
+
+#rotate-icon {
+	width: 3.2rem;
+	height: 5.4rem;
+	border: 3px solid #d8d2bc;
+	border-radius: 0.6rem;
+	margin-bottom: 1.6rem;
+	animation: rotate-hint 2.4s ease-in-out infinite;
+}
+
+@keyframes rotate-hint {
+	0%, 25% { transform: rotate(0deg); }
+	60%, 100% { transform: rotate(-90deg); }
+}
+
+@media (orientation: portrait) and (pointer: coarse) {
+	#rotate { display: flex; }
 }
 
 #canvas {
@@ -176,6 +227,11 @@ body {
 			<div id="boot-bar"><div id="boot-fill"></div></div>
 		</div>
 
+		<div id="rotate">
+			<div id="rotate-icon"></div>
+			<div id="rotate-text">画面を横向きにしてください</div>
+		</div>
+
 		<div id="status">
 			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="index.png" alt="">
 			<progress id="status-progress"></progress>
@@ -184,15 +240,56 @@ body {
 
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":58127660,"index.wasm":39513091},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":33496588,"index.wasm":39513091},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
+
+// Language: Japanese when the browser is set to Japanese, English otherwise (?lang=en / ?lang=ja forces one).
+// The game makes the same choice for itself (scripts/lang.gd).
+const SAKUYA_EN = (function () {
+	const q = new URLSearchParams(window.location.search).get('lang');
+	if (q === 'en' || q === 'ja') {
+		return q === 'en';
+	}
+	try {
+		// what was chosen in the game's pause menu last time
+		const saved = window.localStorage.getItem('sakuya_lang');
+		if (saved === 'en' || saved === 'ja') {
+			return saved === 'en';
+		}
+	} catch (e) { /* storage not available */ }
+	const l = (navigator.languages && navigator.languages[0]) || navigator.language || 'ja';
+	return !l.toLowerCase().startsWith('ja');
+}());
+const SAKUYA_TEXT = SAKUYA_EN
+	? { title: 'Gilded Catacomb', download: 'Downloading...', prepare: 'Preparing the game...', rotate: 'Turn your screen sideways' }
+	: { title: '呪われた地下迷宮', download: 'ダウンロード中…', prepare: 'ゲームを準備中…', rotate: '画面を横向きにしてください' };
+(function () {
+	document.documentElement.lang = SAKUYA_EN ? 'en' : 'ja';
+	if (SAKUYA_EN) { document.title = 'Gilded Catacomb'; }
+	const set = (id, text) => { const e = document.getElementById(id); if (e) { e.textContent = text; } };
+	set('boot-title', SAKUYA_TEXT.title);
+	set('boot-text', SAKUYA_TEXT.download);
+	set('rotate-text', SAKUYA_TEXT.rotate);
+	if (SAKUYA_EN) {
+		const b = document.getElementById('boot-title');
+		if (b) { b.style.letterSpacing = '0.12em'; b.style.fontFamily = "Georgia, 'Times New Roman', serif"; }
+	}
+}());
+
+// called by the game when the language is changed in its pause menu
+window.sakuyaLang = function (code) {
+	const en = code === 'en';
+	document.documentElement.lang = en ? 'en' : 'ja';
+	const r = document.getElementById('rotate-text');
+	if (r) { r.textContent = en ? 'Turn your screen sideways' : '画面を横向きにしてください'; }
+};
 
 // called by the game while it prepares (0..1) and when it can be played
 window.sakuyaBoot = function (v) {
 	const t = document.getElementById('boot-text');
 	const f = document.getElementById('boot-fill');
-	if (t) { t.textContent = 'ゲームを準備中… ' + Math.round(v * 100) + '%'; }
+	if (t) { t.textContent = SAKUYA_TEXT.prepare + ' ' + Math.round(v * 100) + '%'; }
 	if (f) { f.style.width = (v * 100) + '%'; }
 };
 window.sakuyaReady = function () {
@@ -202,6 +299,37 @@ window.sakuyaReady = function () {
 		setTimeout(() => b.remove(), 600);
 	}
 };
+
+// ---- touch screens
+(function () {
+	const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+	// no pinch zoom, no long-press menu, no double-tap zoom on the page itself
+	['gesturestart', 'gesturechange', 'gestureend', 'contextmenu'].forEach((n) => {
+		document.addEventListener(n, (e) => e.preventDefault(), { passive: false });
+	});
+	// Full screen with the screen on its side, where the browser can do that (Android; an iPhone cannot - there,
+	// "Add to Home Screen" opens the game without the browser's bars). Must be asked for from inside a touch.
+	window.sakuyaFullscreen = function () {
+		const el = document.documentElement;
+		if (document.fullscreenElement || !el.requestFullscreen) {
+			return;
+		}
+		el.requestFullscreen({ navigationUI: 'hide' }).then(() => {
+			if (screen.orientation && screen.orientation.lock) {
+				screen.orientation.lock('landscape').catch(() => {});
+			}
+		}).catch(() => {});
+	};
+	if (coarse) {
+		let asked = false;
+		document.addEventListener('touchend', () => {
+			if (!asked && document.getElementById('boot') === null) {
+				asked = true;
+				window.sakuyaFullscreen();
+			}
+		}, { passive: true });
+	}
+}());
 
 (function () {
 	const statusOverlay = document.getElementById('status');
@@ -302,12 +430,17 @@ window.sakuyaReady = function () {
 		}).then(() => {
 			setStatusMode('hidden');
 			const t = document.getElementById('boot-text');
-			if (t) { t.textContent = 'ゲームを準備中…'; }
+			if (t) { t.textContent = SAKUYA_TEXT.prepare; }
 		}, displayFailureNotice);
 	}
 }());
 		</script>
-	<a id="windows-download" href="https://github.com/norimashi/claude_soullike_sakuya/releases/latest" target="_blank" rel="noopener noreferrer" style="position:fixed;right:12px;bottom:12px;z-index:3;padding:8px 12px;border:1px solid #756b4c;border-radius:4px;background:rgba(10,11,16,.82);color:#e5ddc6;font:13px 'Yu Gothic UI',Meiryo,sans-serif;text-decoration:none;">Windows版をダウンロード</a>
+	<style>
+#windows-download { display:none; position:fixed; right:12px; bottom:12px; z-index:3; padding:8px 12px; border:1px solid #756b4c; border-radius:4px; background:rgba(10,11,16,.82); color:#e5ddc6; font:13px 'Yu Gothic UI',Meiryo,sans-serif; text-decoration:none; }
+@media (pointer:fine) { #windows-download { display:block; } }
+</style>
+<a id="windows-download" href="https://github.com/norimashi/claude_soullike_sakuya/releases/latest" target="_blank" rel="noopener noreferrer">Windows版をダウンロード</a>
+<script>if (typeof SAKUYA_EN !== 'undefined' && SAKUYA_EN) { document.getElementById('windows-download').textContent = 'Download for Windows'; }</script>
 </body>
 </html>
 
